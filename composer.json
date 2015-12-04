@@ -1,0 +1,18 @@
+{
+    "name": "dekarvn/php-datacite-client",
+    "description": "A PHP Implementation of the DataCite Client",
+    "authors": [
+        {
+            "name": "Minh Duc Nguyen",
+            "email": "dekarvn@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "MinhD\\": "src/"
+        }
+    },
+    "require": {
+
+    }
+}
