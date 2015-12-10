@@ -13,7 +13,7 @@ class DataCite_Client
 
     private $username;
     private $password;
-    private $dataciteUrl = 'https://mds.datacite.org/';
+    private $dataciteUrl = 'https://mds.test.datacite.org/';
 
     private $errors = array();
     private $messages = array();
@@ -113,9 +113,8 @@ class DataCite_Client
         }
 
         $output = curl_exec($ch);
-        curl_close($ch);
 
-        $this->log('info', 'request url=' . $url . ' response=' . $output);
+        curl_close($ch);
 
         return $output;
     }
