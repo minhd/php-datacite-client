@@ -4,11 +4,11 @@ namespace MinhD;
 
 /**
  * A Client that interfaces with datacite.org
- * Class DataCite_Client
+ * Class DataCiteClient
  * @author Minh Duc Nguyen <dekarvn@gmail.com>
  * @package MinhD
  */
-class DataCite_Client
+class DataCiteClient
 {
 
     private $username;
@@ -19,7 +19,7 @@ class DataCite_Client
     private $messages = array();
 
     /**
-     * DataCite_Client constructor.
+     * DataCiteClient constructor.
      * @param $username
      * @param $password
      */
@@ -53,9 +53,12 @@ class DataCite_Client
     public function mint($doiId, $doiUrl, $xmlBody = false)
     {
         //update xml first
-        $response = $this->update($xmlBody);
-        echo $response;
-        return $this->request($this->dataciteUrl. 'doi/', "doi=".$doiId."\nurl=".$doiUrl);
+        $this->update($xmlBody);
+
+        // and then mint
+        $this->request($this->dataciteUrl . 'doi/', "doi=" . $doiId . "\nurl=" . $doiUrl);
+
+        return $this->hasError() ? false : true;
     }
 
     /**
@@ -75,7 +78,8 @@ class DataCite_Client
 
     public function deActivate($doiId)
     {
-        return $this->request($this->dataciteUrl . 'metadata/'.$doiId, false, "DELETE");
+        return $this->request($this->dataciteUrl . 'metadata/' . $doiId, false,
+            "DELETE");
     }
 
     /**
@@ -99,9 +103,14 @@ class DataCite_Client
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($ch, CURLOPT_USERPWD, $this->username . ":" . $this->password);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type:application/xml;charset=UTF-8"));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // curl_setopt($ch, CURLOPT_VERBOSE, true);
+        // curl_setopt($ch, CURLOPT_HEADER, true);
+
+        curl_setopt($ch, CURLOPT_USERPWD,
+            $this->username . ":" . $this->password);
+        curl_setopt($ch, CURLOPT_HTTPHEADER,
+            array("Content-Type:application/xml;charset=UTF-8"));
 
         if ($content) {
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -109,39 +118,64 @@ class DataCite_Client
         }
 
         if ($customRequest) {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $customRequest);
         }
 
         $output = curl_exec($ch);
+        $outputINFO = curl_getinfo($ch);
+
+        if ($outputINFO['http_code'] >= 400) {
+            $this->log(curl_error($ch), "error");
+            $this->log($output, "error");
+        } else {
+            $this->log($output);
+        }
 
         curl_close($ch);
-
         return $output;
     }
 
-    private function log($context, $content)
+    private function log($content, $context = "info")
     {
-        if ($context == 'error') {
+        if ($content === "" || !$content) return;
+        if ($context == "error") {
             $this->errors[] = $content;
-        } else if ($context == 'info') {
-            $this->messages[] = $content;
+        } else {
+            if ($context == "info") {
+                $this->messages[] = $content;
+            }
         }
     }
 
+    public function getResponse()
+    {
+        return [
+            'errors' => $this->getErrors(),
+            'messages' => $this->getMessages()
+        ];
+    }
+
+    /**
+     * @return array
+     */
     public function getMessages()
     {
         return $this->messages;
     }
 
+    /**
+     * @return array
+     */
     public function getErrors()
     {
         return $this->errors;
     }
 
+    /**
+     * @return bool
+     */
     public function hasError()
     {
-        if (sizeof($this->errors) > 0) {
-            return true;
-        } else return false;
+        return count($this->getErrors()) > 0 ? true : false;
     }
 }
